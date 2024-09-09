@@ -10,19 +10,19 @@ public class AquecendoDois {
      */
     public static class Grafo {
 
-        private final boolean[][] matrizAdjacente;
-        private final int numNodos;
+        private final boolean[][] matrizAdjacente; // Matriz de adjacência para armazenar as arestas
+        private final int numNodos; // Número total de nodos
 
         public Grafo(int numNodos) {
             this.numNodos = numNodos;
-            this.matrizAdjacente = new boolean[numNodos][numNodos];
+            this.matrizAdjacente = new boolean[numNodos][numNodos]; // Inicializa a matriz de adjacência
         }
 
         /**
          * Adiciona uma aresta ao grafo ou dígrafo.
          *
-         * @param i           índice do primeiro nodo
-         * @param j           índice do segundo nodo
+         * @param i           índice do primeiro nodo (internamente começa em 0)
+         * @param j           índice do segundo nodo (internamente começa em 0)
          * @param tipoDeGrafo tipo de grafo (grafo ou dígrafo)
          */
         public void adicionaAresta(int i, int j, String tipoDeGrafo) {
@@ -30,15 +30,21 @@ public class AquecendoDois {
                 throw new IndexOutOfBoundsException("Índices de nodos fora do intervalo válido.");
             }
 
-            matrizAdjacente[i][j] = true;
+            if (matrizAdjacente[i][j]) {
+                System.out.println("Aresta já existe entre os nodos " + (i + 1) + " e " + (j + 1));
+                return; // Aresta já existe, não é necessário adicionar novamente
+            }
 
+            matrizAdjacente[i][j] = true; // Adiciona a aresta do primeiro nodo para o segundo
+
+            // Se for um grafo (não direcionado), adiciona também a aresta na direção oposta
             if (!"digrafo".equalsIgnoreCase(tipoDeGrafo) && !"dígrafo".equalsIgnoreCase(tipoDeGrafo)) {
                 matrizAdjacente[j][i] = true;
             }
         }
 
         /**
-         * Imprime a matriz de adjacência do grafo.
+         * Imprime a matriz de adjacência do grafo ou dígrafo.
          */
         public void imprimeGrafo() {
             for (int i = 0; i < numNodos; i++) {
@@ -60,7 +66,7 @@ public class AquecendoDois {
                         grau++;
                     }
                 }
-                System.out.println("Grau do nodo " + i + ": " + grau);
+                System.out.println("Grau do nodo " + (i + 1) + ": " + grau); // Adiciona 1 ao índice para exibir corretamente ao usuário
             }
         }
 
@@ -79,10 +85,9 @@ public class AquecendoDois {
                         grauEntrada++;
                     }
                 }
-                System.out.println("Nodo " + i + ": Grau de Entrada = " + grauEntrada + ", Grau de Saída = " + grauSaida);
+                System.out.println("Nodo " + (i + 1) + ": Grau de Entrada = " + grauEntrada + ", Grau de Saída = " + grauSaida);
             }
         }
-
     }
 
     public static void main(String[] args) {
@@ -91,6 +96,7 @@ public class AquecendoDois {
             System.out.print("Você deseja criar um dígrafo ou um grafo? ");
             String tipoDeGrafo = scanner.nextLine().trim();
 
+            // Verifica se o tipo de grafo é válido (grafo ou dígrafo)
             if (!"digrafo".equalsIgnoreCase(tipoDeGrafo) && !"dígrafo".equalsIgnoreCase(tipoDeGrafo)
                     && !"grafo".equalsIgnoreCase(tipoDeGrafo)) {
                 throw new IllegalArgumentException("Tipo de grafo inválido. Escolha 'dígrafo' ou 'grafo'.");
@@ -102,26 +108,39 @@ public class AquecendoDois {
                 throw new IllegalArgumentException("O número de nodos deve ser maior que zero.");
             }
 
-            System.out.print("Digite quantas arestas terá o " + tipoDeGrafo + ": ");
-            int quantidadeDeArestas = scanner.nextInt();
+            Grafo grafo = new Grafo(quantidadeDeNodos); // Cria o grafo com o número de nodos especificado
 
-            Grafo grafo = new Grafo(quantidadeDeNodos);
+            // Loop para adicionar arestas até o usuário optar por parar
+            while (true) {
+                System.out.println("Digite os nodos conectados pela aresta:");
+                int primeiroNodo = scanner.nextInt() - 1; // Subtrai 1 para ajustar o índice (usuário insere de 1 a n)
+                int segundoNodo = scanner.nextInt() - 1;  // Subtrai 1 para ajustar o índice
 
-            for (int index = 0; index < quantidadeDeArestas; index++) {
-                System.out.println("Digite os nodos conectados pela aresta " + (index + 1) + ":");
-                int primeiroNodo = scanner.nextInt();
-                int segundoNodo = scanner.nextInt();
+                // Verifica se os nodos estão dentro do intervalo válido
+                if (primeiroNodo < 0 || primeiroNodo >= quantidadeDeNodos || segundoNodo < 0 || segundoNodo >= quantidadeDeNodos) {
+                    System.out.println("Erro: Índices de nodos fora do intervalo válido. Aresta ignorada.");
+                } else {
+                    try {
+                        grafo.adicionaAresta(primeiroNodo, segundoNodo, tipoDeGrafo);
+                    } catch (IndexOutOfBoundsException e) {
+                        System.out.println("Erro: " + e.getMessage() + " Aresta ignorada.");
+                    }
+                }
 
-                try {
-                    grafo.adicionaAresta(primeiroNodo, segundoNodo, tipoDeGrafo);
-                } catch (IndexOutOfBoundsException e) {
-                    System.out.println("Erro: " + e.getMessage() + " Aresta ignorada.");
+                // Pergunta ao usuário se deseja adicionar mais arestas
+                System.out.print("Deseja adicionar outra aresta? (s/n): ");
+                String resposta = scanner.next().trim().toLowerCase();
+
+                if (resposta.equals("n")) {
+                    break; // Sai do loop se o usuário responder "não"
                 }
             }
 
+            // Imprime a matriz de adjacência
             System.out.println("Imprimindo matriz adjacente do " + tipoDeGrafo + ":");
             grafo.imprimeGrafo();
 
+            // Calcula e imprime os graus dependendo do tipo de grafo
             if ("digrafo".equalsIgnoreCase(tipoDeGrafo) || "dígrafo".equalsIgnoreCase(tipoDeGrafo)) {
                 grafo.calculaGrauDigrafo();
             } else {
