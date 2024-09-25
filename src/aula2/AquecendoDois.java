@@ -1,156 +1,245 @@
 package aula2;
 
-import java.util.InputMismatchException;
-import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 public class AquecendoDois {
 
-    /**
-     * Classe Grafo que representa um grafo ou dígrafo utilizando uma matriz de adjacência.
-     */
     public static class Grafo {
 
-        private final boolean[][] matrizAdjacente; // Matriz de adjacência para armazenar as arestas
-        private final int numNodos; // Número total de nodos
+        private final String[][] matrizAdjacente; // Agora é uma matriz de Strings para armazenar o tipo de relacionamento
+        private final List<String> vertices;
+        private final int larguraMaximaNome;
 
-        public Grafo(int numNodos) {
-            this.numNodos = numNodos;
-            this.matrizAdjacente = new boolean[numNodos][numNodos]; // Inicializa a matriz de adjacência
+        public Grafo(Set<String> verticesUnicos) {
+            int numNodos = verticesUnicos.size();
+            this.matrizAdjacente = new String[numNodos][numNodos]; // Inicializa a matriz com Strings
+            this.vertices = new ArrayList<>(verticesUnicos);
+            this.larguraMaximaNome = vertices.stream().mapToInt(String::length).max().orElse(0);
         }
 
-        /**
-         * Adiciona uma aresta ao grafo ou dígrafo.
-         *
-         * @param i           índice do primeiro nodo (internamente começa em 0)
-         * @param j           índice do segundo nodo (internamente começa em 0)
-         * @param tipoDeGrafo tipo de grafo (grafo ou dígrafo)
-         */
-        public void adicionaAresta(int i, int j, String tipoDeGrafo) {
-            if (i < 0 || j < 0 || i >= numNodos || j >= numNodos) {
-                throw new IndexOutOfBoundsException("Índices de nodos fora do intervalo válido.");
+        private int getIndiceVertice(String vertice) {
+            return vertices.indexOf(vertice);
+        }
+
+        public void adicionaAresta(String origem, String destino, String tipoDeGrafo, String relacao) {
+            int i = getIndiceVertice(origem);
+            int j = getIndiceVertice(destino);
+
+            if (i < 0 || j < 0) {
+                throw new IllegalArgumentException("Um ou ambos os vértices não existem.");
             }
 
-            if (matrizAdjacente[i][j]) {
-                System.out.println("Aresta já existe entre os nodos " + (i + 1) + " e " + (j + 1));
-                return; // Aresta já existe, não é necessário adicionar novamente
-            }
+            matrizAdjacente[i][j] = relacao; // Armazena o tipo da relação na matriz
 
-            matrizAdjacente[i][j] = true; // Adiciona a aresta do primeiro nodo para o segundo
-
-            // Se for um grafo (não direcionado), adiciona também a aresta na direção oposta
-            if (!"digrafo".equalsIgnoreCase(tipoDeGrafo) && !"dígrafo".equalsIgnoreCase(tipoDeGrafo)) {
-                matrizAdjacente[j][i] = true;
+            if ("grafo".equalsIgnoreCase(tipoDeGrafo)) {
+                matrizAdjacente[j][i] = relacao; // Aresta bidirecional
             }
         }
 
-        /**
-         * Imprime a matriz de adjacência do grafo ou dígrafo.
-         */
+        public void removeAresta(String origem, String destino, String tipoDeGrafo) {
+            int i = getIndiceVertice(origem);
+            int j = getIndiceVertice(destino);
+
+            if (i < 0 || j < 0) {
+                throw new IllegalArgumentException("Um ou ambos os vértices não existem.");
+            }
+
+            matrizAdjacente[i][j] = null; // Remove a relação da matriz
+
+            if ("grafo".equalsIgnoreCase(tipoDeGrafo)) {
+                matrizAdjacente[j][i] = null; // Remove a aresta bidirecional
+            }
+
+            System.out.println("Aresta entre " + origem + " e " + destino + " removida.");
+        }
+
         public void imprimeGrafo() {
-            for (int i = 0; i < numNodos; i++) {
-                for (int j = 0; j < numNodos; j++) {
-                    System.out.print(matrizAdjacente[i][j] ? "1 " : "0 ");
+            System.out.printf("%-" + larguraMaximaNome + "s ", " ");
+            for (String vertice : vertices) {
+                System.out.printf("%-" + larguraMaximaNome + "s ", vertice);
+            }
+            System.out.println();
+
+            for (int i = 0; i < vertices.size(); i++) {
+                System.out.printf("%-" + larguraMaximaNome + "s ", vertices.get(i));
+                for (int j = 0; j < vertices.size(); j++) {
+                    String relacao = matrizAdjacente[i][j] != null ? matrizAdjacente[i][j] : "-";
+                    System.out.printf("%-" + larguraMaximaNome + "s ", relacao);
                 }
                 System.out.println();
             }
         }
 
-        /**
-         * Calcula e imprime o grau de cada nodo em um grafo não direcionado.
-         */
-        public void calculaGrauGrafo() {
-            for (int i = 0; i < numNodos; i++) {
-                int grau = 0;
-                for (int j = 0; j < numNodos; j++) {
-                    if (matrizAdjacente[i][j]) {
-                        grau++;
-                    }
+        public void imprimeMatrizAdjacente() {
+            System.out.printf("%-" + larguraMaximaNome + "s ", " ");
+            for (String vertice : vertices) {
+                System.out.printf("%-" + larguraMaximaNome + "s ", vertice);
+            }
+            System.out.println();
+
+            for (int i = 0; i < vertices.size(); i++) {
+                System.out.printf("%-" + larguraMaximaNome + "s ", vertices.get(i));
+                for (int j = 0; j < vertices.size(); j++) {
+                    // Se houver uma relação, imprime 1, caso contrário, imprime 0
+                    int valor = (matrizAdjacente[i][j] != null) ? 1 : 0;
+                    System.out.printf("%-" + larguraMaximaNome + "d ", valor);
                 }
-                System.out.println("Grau do nodo " + (i + 1) + ": " + grau); // Adiciona 1 ao índice para exibir corretamente ao usuário
+                System.out.println();
             }
         }
 
-        /**
-         * Calcula e imprime o grau de entrada e de saída de cada nodo em um dígrafo.
-         */
-        public void calculaGrauDigrafo() {
-            for (int i = 0; i < numNodos; i++) {
+        public void consultaAresta(String origem, String destino) {
+            int i = getIndiceVertice(origem);
+            int j = getIndiceVertice(destino);
+
+            if (i < 0 || j < 0) {
+                System.out.println("Um ou ambos os vértices não existem.");
+                return;
+            }
+
+            String relacao = matrizAdjacente[i][j];
+            if (relacao != null) {
+                System.out.println("Aresta entre " + origem + " e " + destino + ": " + relacao);
+            } else {
+                System.out.println("Não existe uma aresta entre " + origem + " e " + destino);
+            }
+        }
+
+        public void consultaVertice(String vertice) {
+            int i = getIndiceVertice(vertice);
+            if (i < 0) {
+                System.out.println("Vértice não encontrado.");
+                return;
+            }
+
+            System.out.println("Conexões de " + vertice + ":");
+            for (int j = 0; j < vertices.size(); j++) {
+                if (matrizAdjacente[i][j] != null) {
+                    System.out.println(vertice + " -> " + vertices.get(j) + " : " + matrizAdjacente[i][j]);
+                }
+            }
+        }
+
+        public void grauVertice(String vertice, String tipoDeGrafo) {
+            int i = getIndiceVertice(vertice);
+            if (i < 0) {
+                System.out.println("Vértice não encontrado.");
+                return;
+            }
+
+            if ("grafo".equalsIgnoreCase(tipoDeGrafo)) {
+                int grau = 0;
+                for (int j = 0; j < vertices.size(); j++) {
+                    if (matrizAdjacente[i][j] != null) {
+                        grau++;
+                    }
+                }
+                System.out.println("Grau do vértice " + vertice + ": " + grau);
+            } else {
                 int grauEntrada = 0;
                 int grauSaida = 0;
-                for (int j = 0; j < numNodos; j++) {
-                    if (matrizAdjacente[i][j]) {
+                for (int j = 0; j < vertices.size(); j++) {
+                    if (matrizAdjacente[i][j] != null) {
                         grauSaida++;
                     }
-                    if (matrizAdjacente[j][i]) {
+                    if (matrizAdjacente[j][i] != null) {
                         grauEntrada++;
                     }
                 }
-                System.out.println("Nodo " + (i + 1) + ": Grau de Entrada = " + grauEntrada + ", Grau de Saída = " + grauSaida);
+                System.out.println("Grau de Entrada de " + vertice + ": " + grauEntrada);
+                System.out.println("Grau de Saída de " + vertice + ": " + grauSaida);
             }
         }
     }
 
     public static void main(String[] args) {
-        try (Scanner scanner = new Scanner(System.in)) {
+        try {
+            Scanner scanner = new Scanner(new File("src/aula2/tempo.txt"));
 
-            System.out.print("Você deseja criar um dígrafo ou um grafo? ");
-            String tipoDeGrafo = scanner.nextLine().trim();
+            Set<String> verticesUnicos = new HashSet<>();
+            List<String[]> arestas = new ArrayList<>();
 
-            // Verifica se o tipo de grafo é válido (grafo ou dígrafo)
-            if (!"digrafo".equalsIgnoreCase(tipoDeGrafo) && !"dígrafo".equalsIgnoreCase(tipoDeGrafo)
-                    && !"grafo".equalsIgnoreCase(tipoDeGrafo)) {
-                throw new IllegalArgumentException("Tipo de grafo inválido. Escolha 'dígrafo' ou 'grafo'.");
-            }
+            while (scanner.hasNextLine()) {
+                String linha = scanner.nextLine();
+                String[] partes = linha.split(" : ");
 
-            System.out.print("Digite a quantidade de nodos: ");
-            int quantidadeDeNodos = scanner.nextInt();
-            if (quantidadeDeNodos <= 0) {
-                throw new IllegalArgumentException("O número de nodos deve ser maior que zero.");
-            }
-
-            Grafo grafo = new Grafo(quantidadeDeNodos); // Cria o grafo com o número de nodos especificado
-
-            // Loop para adicionar arestas até o usuário optar por parar
-            while (true) {
-                System.out.println("Digite os nodos conectados pela aresta:");
-                int primeiroNodo = scanner.nextInt() - 1; // Subtrai 1 para ajustar o índice (usuário insere de 1 a n)
-                int segundoNodo = scanner.nextInt() - 1;  // Subtrai 1 para ajustar o índice
-
-                // Verifica se os nodos estão dentro do intervalo válido
-                if (primeiroNodo < 0 || primeiroNodo >= quantidadeDeNodos || segundoNodo < 0 || segundoNodo >= quantidadeDeNodos) {
-                    System.out.println("Erro: Índices de nodos fora do intervalo válido. Aresta ignorada.");
-                } else {
-                    try {
-                        grafo.adicionaAresta(primeiroNodo, segundoNodo, tipoDeGrafo);
-                    } catch (IndexOutOfBoundsException e) {
-                        System.out.println("Erro: " + e.getMessage() + " Aresta ignorada.");
+                if (partes.length >= 2) { // Adicionando a relação (ally, enemy, family)
+                    String relacao = partes[0];
+                    String tipoRelacao = partes[1].trim();
+                    String[] vertices = relacao.split(" <-> | -> ");
+                    if (vertices.length == 2) {
+                        verticesUnicos.add(vertices[0].trim());
+                        verticesUnicos.add(vertices[1].trim());
+                        arestas.add(new String[]{vertices[0].trim(), vertices[1].trim(), relacao.contains("<->") ? "grafo" : "digrafo", tipoRelacao});
                     }
                 }
+            }
 
-                // Pergunta ao usuário se deseja adicionar mais arestas
-                System.out.print("Deseja adicionar outra aresta? (s/n): ");
-                String resposta = scanner.next().trim().toLowerCase();
+            Grafo grafo = new Grafo(verticesUnicos);
 
-                if (resposta.equals("n")) {
-                    break; // Sai do loop se o usuário responder "não"
+            for (String[] aresta : arestas) {
+                grafo.adicionaAresta(aresta[0], aresta[1], aresta[2], aresta[3]);
+            }
+
+            // Menu para interagir com o grafo
+            Scanner inputScanner = new Scanner(System.in);
+            String tipoDeGrafo = arestas.get(0)[2]; // Usando o tipo de grafo da primeira aresta
+
+            while (true) {
+                System.out.println("\nMenu:");
+                System.out.println("1. Imprimir o grafo");
+                System.out.println("2. Imprimir matriz adjacente");
+                System.out.println("3. Consultar aresta");
+                System.out.println("4. Consultar vértice");
+                System.out.println("5. Informar grau do vértice");
+                System.out.println("6. Remover aresta");
+                System.out.println("7. Sair");
+                System.out.print("Escolha uma opção: ");
+                int opcao = inputScanner.nextInt();
+                inputScanner.nextLine(); // Consome a quebra de linha
+
+                switch (opcao) {
+                    case 1:
+                        grafo.imprimeGrafo();
+                        break;
+                    case 2:
+                        grafo.imprimeMatrizAdjacente();
+                        break;
+                    case 3:
+                        System.out.print("Digite o vértice de origem: ");
+                        String origem = inputScanner.nextLine();
+                        System.out.print("Digite o vértice de destino: ");
+                        String destino = inputScanner.nextLine();
+                        grafo.consultaAresta(origem, destino);
+                        break;
+                    case 4:
+                        System.out.print("Digite o vértice para consulta: ");
+                        String vertice = inputScanner.nextLine();
+                        grafo.consultaVertice(vertice);
+                        break;
+                    case 5:
+                        System.out.print("Digite o vértice para verificar o grau: ");
+                        String verticeGrau = inputScanner.nextLine();
+                        grafo.grauVertice(verticeGrau, tipoDeGrafo);
+                        break;
+                    case 6:
+                        System.out.print("Digite o vértice de origem da aresta a remover: ");
+                        String origemRemocao = inputScanner.nextLine();
+                        System.out.print("Digite o vértice de destino da aresta a remover: ");
+                        String destinoRemocao = inputScanner.nextLine();
+                        grafo.removeAresta(origemRemocao, destinoRemocao, tipoDeGrafo);
+                        break;
+                    case 7:
+                        System.out.println("Saindo...");
+                        return;
+                    default:
+                        System.out.println("Opção inválida. Tente novamente.");
                 }
             }
-
-            // Imprime a matriz de adjacência
-            System.out.println("Imprimindo matriz adjacente do " + tipoDeGrafo + ":");
-            grafo.imprimeGrafo();
-
-            // Calcula e imprime os graus dependendo do tipo de grafo
-            if ("digrafo".equalsIgnoreCase(tipoDeGrafo) || "dígrafo".equalsIgnoreCase(tipoDeGrafo)) {
-                grafo.calculaGrauDigrafo();
-            } else {
-                grafo.calculaGrauGrafo();
-            }
-
-        } catch (InputMismatchException e) {
-            System.out.println("Erro: Entrada inválida. Certifique-se de digitar números inteiros.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Erro: " + e.getMessage());
+        } catch (FileNotFoundException e) {
+            System.err.println("Arquivo não encontrado: " + e.getMessage());
         }
     }
 }
